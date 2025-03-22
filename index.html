@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Калькулятор КБЖУ</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 2fr repeat(5, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .totals, .per100 {
+      margin-top: 16px;
+    }
+
+    .totals div, .per100 div {
+      font-weight: 600;
+      color: #007bff;
+      text-align: center;
+    }
+
+    .headers {
+      display: grid;
+      grid-template-columns: 2fr repeat(5, 1fr) auto;
+      gap: 6px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .product-row input[type="text"],
+    .product-row input[type="number"] {
+      width: 100%;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .product-row button {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #888;
+      cursor: pointer;
+    }
+
+    .btn {
+      display: block;
+      width: auto;
+      margin: 20px auto;
+      padding: 8px 16px;
+      font-size: 15px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
+
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+
+</head>
+<body>
+  <p style="text-align:center; font-weight: 700; font-size:34px; color:#555; max-width:400px; margin: 0 auto 20px auto;">
+  Калькулятор КБЖУ  </p>
+  <p style="text-align:center; font-size:14px; color:#555; max-width:400px; margin: 0 auto 20px auto;">
+    Введите ингредиенты и их КБЖУ на 100 г, а также количество в граммах. Калькулятор автоматически подсчитает итоговые значения для всего блюда и на 100 г.
+  </p>
+  <div class="container">
+    <div id="productContainer"></div>
+    <button class="btn" onclick="addRow()">Добавить</button>
+
+    <div class="headers">
+      <div></div>
+      <div>Б</div>
+      <div>Ж</div>
+      <div>У</div>
+      <div>Ккал</div>
+      <div>г</div>
+      <div></div>
+    </div>
+    <div class="grid totals">
+      <div>На блюдо</div>
+      <div id="totalProtein">0</div>
+      <div id="totalFat">0</div>
+      <div id="totalCarbs">0</div>
+      <div id="totalCalories">0</div>
+      <div></div>
+      <div></div>
+    </div>
+    <div class="grid per100">
+      <div>На 100 г</div>
+      <div id="per100Protein">0</div>
+      <div id="per100Fat">0</div>
+      <div id="per100Carbs">0</div>
+      <div id="per100Calories">0</div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+
+  <script>
+    function addRow() {
+      const container = document.getElementById('productContainer');
+      const row = document.createElement('div');
+      row.className = 'grid product-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Название">
+        <input type="number" step="any" class="protein" placeholder="Б">
+        <input type="number" step="any" class="fat" placeholder="Ж">
+        <input type="number" step="any" class="carbs" placeholder="У">
+        <input type="number" step="any" class="calories" placeholder="Ккал">
+        <input type="number" step="any" class="amount" placeholder="г">
+        <button onclick="removeRow(this)">✖</button>
+      `;
+      container.appendChild(row);
+      row.querySelectorAll('input').forEach(input => input.addEventListener('input', calculateTotals));
+    }
+
+    function removeRow(btn) {
+      btn.closest('.product-row').remove();
+      calculateTotals();
+    }
+
+    function calculateTotals() {
+      let totalProtein = 0, totalFat = 0, totalCarbs = 0, totalCalories = 0, totalWeight = 0;
+      document.querySelectorAll('.product-row').forEach(row => {
+        const protein = parseFloat(row.querySelector('.protein').value) || 0;
+        const fat = parseFloat(row.querySelector('.fat').value) || 0;
+        const carbs = parseFloat(row.querySelector('.carbs').value) || 0;
+        const calories = parseFloat(row.querySelector('.calories').value) || 0;
+        const amount = parseFloat(row.querySelector('.amount').value) || 0;
+
+        totalProtein += (protein * amount) / 100;
+        totalFat += (fat * amount) / 100;
+        totalCarbs += (carbs * amount) / 100;
+        totalCalories += (calories * amount) / 100;
+        totalWeight += amount;
+      });
+
+      document.getElementById('totalProtein').innerText = totalProtein.toFixed(1);
+      document.getElementById('totalFat').innerText = totalFat.toFixed(1);
+      document.getElementById('totalCarbs').innerText = totalCarbs.toFixed(1);
+      document.getElementById('totalCalories').innerText = totalCalories.toFixed(1);
+
+      document.getElementById('per100Protein').innerText = totalWeight ? (totalProtein / totalWeight * 100).toFixed(1) : 0;
+      document.getElementById('per100Fat').innerText = totalWeight ? (totalFat / totalWeight * 100).toFixed(1) : 0;
+      document.getElementById('per100Carbs').innerText = totalWeight ? (totalCarbs / totalWeight * 100).toFixed(1) : 0;
+      document.getElementById('per100Calories').innerText = totalWeight ? (totalCalories / totalWeight * 100).toFixed(1) : 0;
+    }
+
+    addRow();
+  </script>
+</body>
+</html>
+
